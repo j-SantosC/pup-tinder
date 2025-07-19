@@ -1,6 +1,8 @@
 import React from "react";
 import { Button } from "antd";
 import { useAuth0 } from "@auth0/auth0-react";
+import logoImage from "../assets/pup-tinder-background.png";
+import "./Login.css";
 
 const Login = () => {
   const { loginWithRedirect, isLoading } = useAuth0();
@@ -10,21 +12,20 @@ const Login = () => {
   };
 
   return (
-    <div
-      style={{
-        display: "flex",
-        justifyContent: "center",
-        alignItems: "center",
-        height: "100vh",
-      }}
-    >
+    <div className="container">
+      <img
+        src={logoImage}
+        alt="Pup-Tinder Logo"
+        style={{ width: "180px", marginBottom: "24px" }}
+      />
       <Button
-        type="primary"
-        size="large"
+        color="default"
+        variant="solid"
         onClick={handleLogin}
         loading={isLoading}
+        size="large"
       >
-        Login with Auth0
+        Log in
       </Button>
     </div>
   );
