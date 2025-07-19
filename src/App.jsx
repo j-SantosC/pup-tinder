@@ -12,14 +12,14 @@ function App() {
         <Menu
           theme="dark"
           mode="horizontal"
-          defaultSelectedKeys={["1"]} // Cambiado para coincidir con la key del item
+          defaultSelectedKeys={["1"]}
           items={items}
           style={{ flex: 1, minWidth: 0 }}
         />
       </Header>
       <main style={{ padding: "20px" }}>
         {" "}
-        <Outlet /> {/* Aquí se cargan las rutas hijas */}
+        <Outlet />
       </main>
     </div>
   );
