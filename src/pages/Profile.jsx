@@ -15,22 +15,28 @@ import {
   Modal,
   List,
   Popconfirm,
+  Row,
+  Col,
 } from "antd";
 import {
   UploadOutlined,
   PlusOutlined,
   DeleteOutlined,
+  EditOutlined,
 } from "@ant-design/icons";
 import "./Profile.css";
 
 const { Title, Text } = Typography;
+const { TextArea } = Input;
 
 const ProfileWithUsers = () => {
   const { user, isAuthenticated, getAccessTokenSilently } = useAuth0();
   const [currentUser, setCurrentUser] = useState(null);
   const [dogs, setDogs] = useState([]);
-  const [isModalVisible, setIsModalVisible] = useState(false);
-  const [form] = Form.useForm();
+  const [isDogModalVisible, setIsDogModalVisible] = useState(false);
+  const [isEditModalVisible, setIsEditModalVisible] = useState(false);
+  const [dogForm] = Form.useForm();
+  const [editForm] = Form.useForm();
   const [uploading, setUploading] = useState(false);
 
   const fetchCurrentUser = async () => {
@@ -41,7 +47,6 @@ const ProfileWithUsers = () => {
           Authorization: `Bearer ${token}`,
         },
       });
-
       const data = await res.json();
       setCurrentUser(data);
       setDogs(data.dogs || []);
@@ -77,10 +82,41 @@ const ProfileWithUsers = () => {
 
       if (!res.ok) throw new Error("Upload failed");
       message.success("Imagen subida correctamente");
-      fetchCurrentUser(); // Refresh user data
+      fetchCurrentUser();
     } catch (err) {
       console.error("Upload error:", err);
       message.error("Error al subir imagen");
+    }
+  };
+
+  const handleEditProfile = async (values) => {
+    if (!currentUser?._id) return;
+
+    const token = await getAccessTokenSilently();
+
+    try {
+      const res = await fetch(
+        `http://localhost:3001/api/users/${currentUser._id}`,
+        {
+          method: "PUT",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            name: values.name,
+            bio: values.bio,
+          }),
+        }
+      );
+
+      if (!res.ok) throw new Error("Update failed");
+      message.success("Perfil actualizado correctamente");
+      setIsEditModalVisible(false);
+      fetchCurrentUser();
+    } catch (err) {
+      console.error("Update error:", err);
+      message.error("Error al actualizar perfil");
     }
   };
 
@@ -110,9 +146,9 @@ const ProfileWithUsers = () => {
       if (!res.ok) throw new Error("Failed to add dog");
 
       message.success("Perro agregado correctamente");
-      setIsModalVisible(false);
-      form.resetFields();
-      fetchCurrentUser(); // Refresh user data
+      setIsDogModalVisible(false);
+      dogForm.resetFields();
+      fetchCurrentUser();
     } catch (err) {
       console.error("Add dog error:", err);
       message.error("Error al agregar perro");
@@ -138,146 +174,198 @@ const ProfileWithUsers = () => {
       if (!res.ok) throw new Error("Failed to delete dog");
 
       message.success("Perro eliminado correctamente");
-      fetchCurrentUser(); // Refresh user data
+      fetchCurrentUser();
     } catch (err) {
       console.error("Delete dog error:", err);
       message.error("Error al eliminar perro");
     }
   };
 
+  const openEditModal = () => {
+    editForm.setFieldsValue({
+      name: currentUser.name,
+      bio: currentUser.bio || "",
+    });
+    setIsEditModalVisible(true);
+  };
+
   if (!isAuthenticated) return <p>Please log in to view your profile.</p>;
   if (!currentUser)
     return (
       <div className="spin-container">
-        <Spin tip="Loading profile..." size="large" />;
+        <Spin tip="Loading profile..." size="large" />
       </div>
     );
 
   return (
-    <div style={{ maxWidth: 600, margin: "2rem auto" }}>
-      <Card
-        bordered
-        hoverable
-        style={{ textAlign: "center", marginBottom: "1rem" }}
-      >
-        <Avatar
-          src={currentUser?.imageUrl}
-          size={100}
-          style={{ marginBottom: "1rem" }}
-        />
-        <Title level={3}>{currentUser.name}</Title>
-        <Text type="secondary">{currentUser.email}</Text>
-
-        <Divider />
-
-        <Upload
-          customRequest={handleUpload}
-          showUploadList={false}
-          accept="image/*"
-        >
-          <Button icon={<UploadOutlined />}>Upload Profile Image</Button>
-        </Upload>
-      </Card>
-
-      {/* Dogs Section */}
-      <Card title="Mis Perros" bordered hoverable>
-        <Space direction="vertical" style={{ width: "100%" }}>
-          <Button
-            color="default"
-            variant="outlined"
-            icon={<PlusOutlined />}
-            onClick={() => setIsModalVisible(true)}
-            style={{ marginBottom: "1rem" }}
-          >
-            Add Pup
-          </Button>
-
-          {dogs.length === 0 ? (
-            <Text type="secondary">No pups yet</Text>
-          ) : (
-            <List
-              dataSource={dogs}
-              renderItem={(dog) => (
-                <List.Item
-                  actions={[
-                    <Popconfirm
-                      title="¿Estás seguro de eliminar este perro?"
-                      onConfirm={() => handleDeleteDog(dog._id)}
-                      okText="Sí"
-                      cancelText="No"
-                    >
-                      <Button danger icon={<DeleteOutlined />} />
-                    </Popconfirm>,
-                  ]}
-                >
-                  <List.Item.Meta
-                    avatar={<Avatar src={dog.imageUrl} size={64} />}
-                    title={dog.name}
-                    description={`${dog.breed} - ${dog.age} años`}
-                  />
-                </List.Item>
-              )}
+    <div style={{ maxWidth: 1200, margin: "2rem auto", padding: "0 1rem" }}>
+      <Row gutter={[24, 24]}>
+        <Col xs={24} lg={10}>
+          <Card bordered hoverable style={{ textAlign: "center" }}>
+            <Avatar
+              src={currentUser?.imageUrl}
+              size={100}
+              style={{ marginBottom: "1rem" }}
             />
-          )}
-        </Space>
-      </Card>
+            <Title level={3}>{currentUser.name}</Title>
+            <Text type="secondary">{currentUser.email}</Text>
 
-      {/* Add Dog Modal */}
+            {currentUser.bio && (
+              <>
+                <Divider />
+                <Text>{currentUser.bio}</Text>
+              </>
+            )}
+
+            <Divider />
+
+            <Space>
+              <Upload
+                customRequest={handleUpload}
+                showUploadList={false}
+                accept="image/*"
+              >
+                <Button icon={<UploadOutlined />}>Subir Imagen</Button>
+              </Upload>
+
+              <Button icon={<EditOutlined />} onClick={openEditModal}>
+                Editar Perfil
+              </Button>
+            </Space>
+          </Card>
+        </Col>
+
+        <Col xs={24} lg={14}>
+          <Card title="Mis Perros" bordered hoverable>
+            <Button
+              type="dashed"
+              icon={<PlusOutlined />}
+              onClick={() => setIsDogModalVisible(true)}
+              style={{ marginBottom: "1rem", width: "100%" }}
+            >
+              Agregar Perro
+            </Button>
+
+            {dogs.length === 0 ? (
+              <Text type="secondary">No tienes perros registrados</Text>
+            ) : (
+              <List
+                dataSource={dogs}
+                renderItem={(dog) => (
+                  <List.Item
+                    actions={[
+                      <Popconfirm
+                        title="¿Eliminar este perro?"
+                        onConfirm={() => handleDeleteDog(dog._id)}
+                        okText="Sí"
+                        cancelText="No"
+                      >
+                        <Button danger icon={<DeleteOutlined />} />
+                      </Popconfirm>,
+                    ]}
+                  >
+                    <List.Item.Meta
+                      avatar={<Avatar src={dog.imageUrl} size={64} />}
+                      title={dog.name}
+                      description={`${dog.breed} - ${dog.age} años`}
+                    />
+                  </List.Item>
+                )}
+              />
+            )}
+          </Card>
+        </Col>
+      </Row>
+
       <Modal
-        title="Agregar Nuevo Perro"
-        open={isModalVisible}
-        onCancel={() => {
-          setIsModalVisible(false);
-          form.resetFields();
-        }}
+        title="Editar Perfil"
+        open={isEditModalVisible}
+        onCancel={() => setIsEditModalVisible(false)}
         footer={null}
       >
-        <Form form={form} onFinish={handleAddDog} layout="vertical">
+        <Form form={editForm} onFinish={handleEditProfile} layout="vertical">
           <Form.Item
             name="name"
             label="Nombre"
-            rules={[
-              {
-                required: true,
-                message: "Por favor ingresa el nombre del perro",
-              },
-            ]}
+            rules={[{ required: true, message: "Ingresa tu nombre" }]}
           >
-            <Input placeholder="Nombre del perro" />
+            <Input placeholder="Tu nombre" />
+          </Form.Item>
+
+          <Form.Item name="bio" label="Biografía">
+            <TextArea
+              placeholder="Cuéntanos sobre ti..."
+              rows={4}
+              maxLength={200}
+              showCount
+            />
+          </Form.Item>
+
+          <Form.Item>
+            <Space>
+              <Button type="primary" htmlType="submit">
+                Guardar
+              </Button>
+              <Button onClick={() => setIsEditModalVisible(false)}>
+                Cancelar
+              </Button>
+            </Space>
+          </Form.Item>
+        </Form>
+      </Modal>
+
+      <Modal
+        title="Agregar Perro"
+        open={isDogModalVisible}
+        onCancel={() => {
+          setIsDogModalVisible(false);
+          dogForm.resetFields();
+        }}
+        footer={null}
+      >
+        <Form form={dogForm} onFinish={handleAddDog} layout="vertical">
+          <Form.Item
+            name="name"
+            label="Nombre"
+            rules={[{ required: true, message: "Nombre del perro" }]}
+          >
+            <Input placeholder="Nombre" />
           </Form.Item>
 
           <Form.Item
             name="breed"
             label="Raza"
-            rules={[{ required: true, message: "Por favor ingresa la raza" }]}
+            rules={[{ required: true, message: "Raza del perro" }]}
           >
-            <Input placeholder="Raza del perro" />
+            <Input placeholder="Raza" />
           </Form.Item>
 
           <Form.Item
             name="age"
             label="Edad"
-            rules={[{ required: true, message: "Por favor ingresa la edad" }]}
+            rules={[{ required: true, message: "Edad del perro" }]}
           >
-            <Input placeholder="Edad en años" type="number" />
+            <Input placeholder="Años" type="number" />
           </Form.Item>
 
           <Form.Item
             name="dogImage"
-            label="Foto del Perro"
-            rules={[{ required: true, message: "Por favor sube una foto" }]}
+            label="Foto"
+            rules={[{ required: true, message: "Sube una foto" }]}
           >
             <Upload beforeUpload={() => false} maxCount={1} accept="image/*">
-              <Button icon={<UploadOutlined />}>Seleccionar Imagen</Button>
+              <Button icon={<UploadOutlined />}>Seleccionar</Button>
             </Upload>
           </Form.Item>
 
           <Form.Item>
             <Space>
               <Button type="primary" htmlType="submit" loading={uploading}>
-                Agregar Perro
+                Agregar
               </Button>
-              <Button onClick={() => setIsModalVisible(false)}>Cancelar</Button>
+              <Button onClick={() => setIsDogModalVisible(false)}>
+                Cancelar
+              </Button>
             </Space>
           </Form.Item>
         </Form>
