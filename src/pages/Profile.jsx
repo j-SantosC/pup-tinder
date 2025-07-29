@@ -105,6 +105,7 @@ const ProfileWithUsers = () => {
           },
           body: JSON.stringify({
             name: values.name,
+            city: values.city,
             bio: values.bio,
           }),
         }
@@ -184,6 +185,7 @@ const ProfileWithUsers = () => {
   const openEditModal = () => {
     editForm.setFieldsValue({
       name: currentUser.name,
+      city: currentUser.city,
       bio: currentUser.bio || "",
     });
     setIsEditModalVisible(true);
@@ -209,6 +211,7 @@ const ProfileWithUsers = () => {
             />
             <Title level={3}>{currentUser.name}</Title>
             <Text type="secondary">{currentUser.email}</Text>
+            <Text type="secondary">{currentUser.city}</Text>
 
             {currentUser.bio && (
               <>
@@ -290,6 +293,14 @@ const ProfileWithUsers = () => {
             rules={[{ required: true, message: "Ingresa tu nombre" }]}
           >
             <Input placeholder="Tu nombre" />
+          </Form.Item>
+
+          <Form.Item
+            name="city"
+            label="Ciudad"
+            rules={[{ required: true, message: "Donde vives?" }]}
+          >
+            <Input placeholder="Tu ciudad" />
           </Form.Item>
 
           <Form.Item name="bio" label="Biografía">

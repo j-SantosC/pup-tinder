@@ -10,7 +10,7 @@ function App() {
   const { logout } = useAuth0();
   const items = [
     { key: "/app/home", label: "Home" },
-    { key: "/app/profile", label: "Profile" },
+    { key: "/app/match", label: "Match" },
   ];
 
   const navigate = useNavigate();
@@ -35,7 +35,11 @@ function App() {
         />
 
         <div className="header-actions">
-          <UserOutlined className="user-icon" />
+          <UserOutlined
+            className="user-icon"
+            onClick={() => navigate("/app/profile")}
+            style={{ cursor: "pointer" }}
+          />
           <Button
             type="text"
             icon={<LogoutOutlined />}
