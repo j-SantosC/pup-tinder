@@ -57,20 +57,35 @@ export default function DogTinderMatch() {
   const currentDog = dogProfiles[currentIndex];
 
   const handleReject = () => {
+    markAsSeen(currentDog.dogId);
     if (currentIndex < dogProfiles.length - 1) {
       setCurrentIndex(currentIndex + 1);
     } else {
-      setCurrentIndex(0);
+      // Ya no hay más perros
+      setDogProfiles([]); // Vacía la lista
     }
   };
 
   const handleAccept = () => {
+    markAsSeen(currentDog.dogId);
     setMatches([...matches, currentDog]);
     if (currentIndex < dogProfiles.length - 1) {
       setCurrentIndex(currentIndex + 1);
     } else {
-      setCurrentIndex(0);
+      setDogProfiles([]);
     }
+  };
+
+  const markAsSeen = async (dogId) => {
+    const token = await getAccessTokenSilently();
+    await fetch("http://localhost:3001/api/users/seen", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ dogId }),
+    });
   };
 
   const cardStyle = {

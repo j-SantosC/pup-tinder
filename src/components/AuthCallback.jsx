@@ -1,10 +1,42 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useAuth0 } from "@auth0/auth0-react";
 import { Navigate } from "react-router-dom";
 import { Spin } from "antd";
 
 const AuthCallback = () => {
-  const { isAuthenticated, isLoading, error } = useAuth0();
+  const { user, isAuthenticated, isLoading, error, getAccessTokenSilently } =
+    useAuth0();
+  const [userCreated, setUserCreated] = useState(false);
+
+  useEffect(() => {
+    const createUserIfNew = async () => {
+      if (isAuthenticated && user) {
+        try {
+          const token = await getAccessTokenSilently();
+
+          await fetch("http://localhost:3001/api/users", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({
+              email: user.email,
+            }),
+          });
+        } catch (error) {
+          if (error.status !== 409) {
+            console.error("Error creating user:", error);
+          }
+        }
+        setUserCreated(true);
+      }
+    };
+
+    if (isAuthenticated && !userCreated) {
+      createUserIfNew();
+    }
+  }, [isAuthenticated, user, getAccessTokenSilently, userCreated]);
 
   useEffect(() => {
     if (error) {
@@ -12,7 +44,7 @@ const AuthCallback = () => {
     }
   }, [error]);
 
-  if (isLoading) {
+  if (isLoading || (isAuthenticated && !userCreated)) {
     return (
       <div
         style={{

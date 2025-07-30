@@ -203,7 +203,12 @@ const ProfileWithUsers = () => {
     <div style={{ maxWidth: 1200, margin: "2rem auto", padding: "0 1rem" }}>
       <Row gutter={[24, 24]}>
         <Col xs={24} lg={10}>
-          <Card bordered hoverable style={{ textAlign: "center" }}>
+          <Card
+            className="card"
+            bordered
+            hoverable
+            style={{ textAlign: "center" }}
+          >
             <Avatar
               src={currentUser?.imageUrl}
               size={100}
@@ -211,7 +216,8 @@ const ProfileWithUsers = () => {
             />
             <Title level={3}>{currentUser.name}</Title>
             <Text type="secondary">{currentUser.email}</Text>
-            <Text type="secondary">{currentUser.city}</Text>
+            <br />
+            <Text type="secondary">{currentUser.city || "No city"}</Text>
 
             {currentUser.bio && (
               <>
@@ -223,17 +229,19 @@ const ProfileWithUsers = () => {
             <Divider />
 
             <Space>
-              <Upload
-                customRequest={handleUpload}
-                showUploadList={false}
-                accept="image/*"
-              >
-                <Button icon={<UploadOutlined />}>Subir Imagen</Button>
-              </Upload>
+              <div className="button-wrapper">
+                <Upload
+                  customRequest={handleUpload}
+                  showUploadList={false}
+                  accept="image/*"
+                >
+                  <Button icon={<UploadOutlined />}>Subir Imagen</Button>
+                </Upload>
 
-              <Button icon={<EditOutlined />} onClick={openEditModal}>
-                Editar Perfil
-              </Button>
+                <Button icon={<EditOutlined />} onClick={openEditModal}>
+                  Editar Perfil
+                </Button>
+              </div>
             </Space>
           </Card>
         </Col>
