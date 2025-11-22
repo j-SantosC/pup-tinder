@@ -1,6 +1,6 @@
 import { UserOutlined, LogoutOutlined } from "@ant-design/icons";
 import { Menu, Button } from "antd";
-import { Header } from "antd/es/layout/layout";
+import { Header, Footer } from "antd/es/layout/layout";
 import { Outlet } from "react-router-dom";
 import { useAuth0 } from "@auth0/auth0-react";
 import "./App.css";
@@ -23,7 +23,9 @@ function App() {
   };
 
   return (
-    <div>
+    <div
+      style={{ minHeight: "100vh", display: "flex", flexDirection: "column" }}
+    >
       <Header className="header">
         <div className="demo-logo" />
         <Menu
@@ -51,9 +53,26 @@ function App() {
           </Button>
         </div>
       </Header>
-      <main className="main-content">
+
+      <main className="main-content" style={{ flex: 1 }}>
         <Outlet />
       </main>
+
+      <Footer
+        style={{
+          textAlign: "center",
+          background: "#001529",
+          color: "rgba(255, 255, 255, 0.65)",
+          padding: "24px 50px",
+        }}
+      >
+        <div style={{ marginBottom: "8px" }}>
+          🐕 PupTinder ©{new Date().getFullYear()}
+        </div>
+        <div style={{ fontSize: "14px" }}>
+          Conectando amigos peludos | Hecho con ❤️ para perros
+        </div>
+      </Footer>
     </div>
   );
 }

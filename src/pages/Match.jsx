@@ -93,7 +93,6 @@ export default function DogTinderMatch() {
     }
   };
 
-  // FUNCIÓN NUEVA: Guardar like en backend
   const saveLike = async (dog) => {
     try {
       const token = await getAccessTokenSilently();
@@ -129,13 +128,12 @@ export default function DogTinderMatch() {
     overflow: "hidden",
   };
 
+  // CAMBIO: Quitado minHeight: "100vh" que causaba el scroll
   const containerStyle = {
     display: "flex",
     flexDirection: "column",
     alignItems: "center",
-    minHeight: "100vh",
-    backgroundColor: "#ffffff1a",
-    padding: "20px",
+    padding: "40px 20px",
   };
 
   const ownerInfoStyle = {
@@ -161,6 +159,7 @@ export default function DogTinderMatch() {
     borderRadius: "15px",
     padding: "15px",
     width: "350px",
+    maxWidth: "90vw",
   };
 
   if (loading) {
@@ -178,7 +177,7 @@ export default function DogTinderMatch() {
         <p>No hay más perros disponibles</p>
         <Button
           type="primary"
-          onClick={() => (window.location.href = "/likes")}
+          onClick={() => (window.location.href = "/app/likes")}
           style={{ marginTop: 20 }}
         >
           Ver mis Me Gusta
@@ -222,7 +221,7 @@ export default function DogTinderMatch() {
       >
         <div
           style={ownerInfoStyle}
-          onClick={() => (window.location.href = "/profile")}
+          onClick={() => (window.location.href = "/app/profile")}
         >
           <Avatar
             src={
