@@ -35,6 +35,7 @@ export default function DogTinderMatch() {
         age: dog.age,
         image: dog.imageUrl,
         owner: {
+          userId: dog.owner.userId,
           name: dog.owner.name,
           city: dog.owner.city,
           image: dog.owner.imageUrl,
@@ -61,13 +62,13 @@ export default function DogTinderMatch() {
     if (currentIndex < dogProfiles.length - 1) {
       setCurrentIndex(currentIndex + 1);
     } else {
-      // Ya no hay más perros
-      setDogProfiles([]); // Vacía la lista
+      setDogProfiles([]);
     }
   };
 
-  const handleAccept = () => {
-    markAsSeen(currentDog.dogId);
+  const handleAccept = async () => {
+    await saveLike(currentDog);
+    await markAsSeen(currentDog.dogId);
     setMatches([...matches, currentDog]);
     if (currentIndex < dogProfiles.length - 1) {
       setCurrentIndex(currentIndex + 1);
@@ -77,15 +78,48 @@ export default function DogTinderMatch() {
   };
 
   const markAsSeen = async (dogId) => {
-    const token = await getAccessTokenSilently();
-    await fetch("http://localhost:3001/api/users/seen", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ dogId }),
-    });
+    try {
+      const token = await getAccessTokenSilently();
+      await fetch("http://localhost:3001/api/users/seen", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ dogId }),
+      });
+    } catch (err) {
+      console.error("Error marking as seen:", err);
+    }
+  };
+
+  // FUNCIÓN NUEVA: Guardar like en backend
+  const saveLike = async (dog) => {
+    try {
+      const token = await getAccessTokenSilently();
+      await fetch("http://localhost:3001/api/users/likes", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          dogId: dog.dogId,
+          ownerId: dog.owner.userId,
+          dogName: dog.name,
+          dogBreed: dog.breed,
+          dogAge: dog.age,
+          dogImageUrl: dog.image,
+          ownerName: dog.owner.name,
+          ownerCity: dog.owner.city,
+          ownerImageUrl: dog.owner.image,
+          ownerBio: dog.owner.bio,
+        }),
+      });
+      console.log(`Like guardado: ${dog.name}`);
+    } catch (err) {
+      console.error("Error saving like:", err);
+    }
   };
 
   const cardStyle = {
@@ -142,6 +176,13 @@ export default function DogTinderMatch() {
     return (
       <div style={containerStyle}>
         <p>No hay más perros disponibles</p>
+        <Button
+          type="primary"
+          onClick={() => (window.location.href = "/likes")}
+          style={{ marginTop: 20 }}
+        >
+          Ver mis Me Gusta
+        </Button>
       </div>
     );
   }
@@ -204,7 +245,7 @@ export default function DogTinderMatch() {
               }}
             >
               <EnvironmentOutlined />
-              <span>{currentDog.owner.city}</span>
+              <span>{currentDog.owner.city || "Ciudad no especificada"}</span>
             </div>
           </div>
         </div>
@@ -225,7 +266,7 @@ export default function DogTinderMatch() {
 
       {matches.length > 0 && (
         <div style={matchesStyle}>
-          <h3>Matches ({matches.length})</h3>
+          <h3>Me gustaron ({matches.length})</h3>
           <div style={{ display: "flex", gap: "10px", overflowX: "auto" }}>
             {matches.map((dog) => (
               <div

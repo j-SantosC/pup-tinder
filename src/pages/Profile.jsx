@@ -38,28 +38,60 @@ const ProfileWithUsers = () => {
   const [dogForm] = Form.useForm();
   const [editForm] = Form.useForm();
   const [uploading, setUploading] = useState(false);
+  const [loading, setLoading] = useState(true);
 
-  const fetchCurrentUser = async () => {
+  const fetchOrCreateUser = async () => {
     try {
+      setLoading(true);
       const token = await getAccessTokenSilently();
-      const res = await fetch("http://localhost:3001/api/users/auth/profile", {
+
+      // Primero intenta obtener el usuario
+      let res = await fetch("http://localhost:3001/api/users/auth/profile", {
         headers: {
           Authorization: `Bearer ${token}`,
         },
       });
+
+      if (res.status === 404) {
+        // Si no existe, créalo
+        res = await fetch("http://localhost:3001/api/users/auth/create", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            email: user.email,
+            name: user.name || user.nickname || user.email.split("@")[0],
+            imageUrl: user.picture || "",
+          }),
+        });
+
+        if (res.status === 201) {
+          message.success("¡Bienvenido! Tu perfil ha sido creado");
+        }
+      }
+
+      if (!res.ok) {
+        throw new Error("Error al cargar el perfil");
+      }
+
       const data = await res.json();
       setCurrentUser(data);
       setDogs(data.dogs || []);
     } catch (err) {
-      console.error("Error fetching current user:", err);
+      console.error("Error:", err);
+      message.error("Error al cargar el perfil");
+    } finally {
+      setLoading(false);
     }
   };
 
   useEffect(() => {
-    if (isAuthenticated) {
-      fetchCurrentUser();
+    if (isAuthenticated && user) {
+      fetchOrCreateUser();
     }
-  }, [isAuthenticated]);
+  }, [isAuthenticated, user]);
 
   const handleUpload = async ({ file }) => {
     if (!currentUser?._id) return;
@@ -82,7 +114,7 @@ const ProfileWithUsers = () => {
 
       if (!res.ok) throw new Error("Upload failed");
       message.success("Imagen subida correctamente");
-      fetchCurrentUser();
+      fetchOrCreateUser();
     } catch (err) {
       console.error("Upload error:", err);
       message.error("Error al subir imagen");
@@ -114,7 +146,7 @@ const ProfileWithUsers = () => {
       if (!res.ok) throw new Error("Update failed");
       message.success("Perfil actualizado correctamente");
       setIsEditModalVisible(false);
-      fetchCurrentUser();
+      fetchOrCreateUser();
     } catch (err) {
       console.error("Update error:", err);
       message.error("Error al actualizar perfil");
@@ -149,7 +181,7 @@ const ProfileWithUsers = () => {
       message.success("Perro agregado correctamente");
       setIsDogModalVisible(false);
       dogForm.resetFields();
-      fetchCurrentUser();
+      fetchOrCreateUser();
     } catch (err) {
       console.error("Add dog error:", err);
       message.error("Error al agregar perro");
@@ -175,7 +207,7 @@ const ProfileWithUsers = () => {
       if (!res.ok) throw new Error("Failed to delete dog");
 
       message.success("Perro eliminado correctamente");
-      fetchCurrentUser();
+      fetchOrCreateUser();
     } catch (err) {
       console.error("Delete dog error:", err);
       message.error("Error al eliminar perro");
@@ -185,19 +217,42 @@ const ProfileWithUsers = () => {
   const openEditModal = () => {
     editForm.setFieldsValue({
       name: currentUser.name,
-      city: currentUser.city,
+      city: currentUser.city || "",
       bio: currentUser.bio || "",
     });
     setIsEditModalVisible(true);
   };
 
-  if (!isAuthenticated) return <p>Please log in to view your profile.</p>;
-  if (!currentUser)
+  if (!isAuthenticated)
+    return <p>Por favor inicia sesión para ver tu perfil.</p>;
+
+  if (loading) {
     return (
-      <div className="spin-container">
-        <Spin tip="Loading profile..." size="large" />
+      <div
+        className="spin-container"
+        style={{
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          height: "50vh",
+        }}
+      >
+        <Spin tip="Cargando perfil..." size="large" />
       </div>
     );
+  }
+
+  if (!currentUser) {
+    return (
+      <div style={{ textAlign: "center", padding: "2rem" }}>
+        <Text>Error al cargar el perfil. Por favor, intenta de nuevo.</Text>
+        <br />
+        <Button onClick={fetchOrCreateUser} style={{ marginTop: "1rem" }}>
+          Reintentar
+        </Button>
+      </div>
+    );
+  }
 
   return (
     <div style={{ maxWidth: 1200, margin: "2rem auto", padding: "0 1rem" }}>
@@ -217,7 +272,9 @@ const ProfileWithUsers = () => {
             <Title level={3}>{currentUser.name}</Title>
             <Text type="secondary">{currentUser.email}</Text>
             <br />
-            <Text type="secondary">{currentUser.city || "No city"}</Text>
+            <Text type="secondary">
+              {currentUser.city || "Ciudad no especificada"}
+            </Text>
 
             {currentUser.bio && (
               <>
@@ -229,19 +286,17 @@ const ProfileWithUsers = () => {
             <Divider />
 
             <Space>
-              <div className="button-wrapper">
-                <Upload
-                  customRequest={handleUpload}
-                  showUploadList={false}
-                  accept="image/*"
-                >
-                  <Button icon={<UploadOutlined />}>Subir Imagen</Button>
-                </Upload>
+              <Upload
+                customRequest={handleUpload}
+                showUploadList={false}
+                accept="image/*"
+              >
+                <Button icon={<UploadOutlined />}>Subir Imagen</Button>
+              </Upload>
 
-                <Button icon={<EditOutlined />} onClick={openEditModal}>
-                  Editar Perfil
-                </Button>
-              </div>
+              <Button icon={<EditOutlined />} onClick={openEditModal}>
+                Editar Perfil
+              </Button>
             </Space>
           </Card>
         </Col>
@@ -303,11 +358,7 @@ const ProfileWithUsers = () => {
             <Input placeholder="Tu nombre" />
           </Form.Item>
 
-          <Form.Item
-            name="city"
-            label="Ciudad"
-            rules={[{ required: true, message: "Donde vives?" }]}
-          >
+          <Form.Item name="city" label="Ciudad">
             <Input placeholder="Tu ciudad" />
           </Form.Item>
 

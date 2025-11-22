@@ -11,6 +11,7 @@ function App() {
   const items = [
     { key: "/app/home", label: "Home" },
     { key: "/app/match", label: "Match" },
+    { key: "/app/likes", label: "My Likes" },
   ];
 
   const navigate = useNavigate();
