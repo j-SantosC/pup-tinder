@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useAuth0 } from "@auth0/auth0-react";
+import { useNavigate } from "react-router-dom";
 import {
   Card,
   Avatar,
@@ -16,12 +17,14 @@ import {
   EnvironmentOutlined,
   UserOutlined,
   DeleteOutlined,
+  EyeOutlined,
 } from "@ant-design/icons";
 
 const { Title, Text } = Typography;
 
 export default function MyLikes() {
   const { getAccessTokenSilently, isAuthenticated } = useAuth0();
+  const navigate = useNavigate();
   const [likedDogs, setLikedDogs] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -71,6 +74,10 @@ export default function MyLikes() {
     }
   };
 
+  const viewDogDetail = (dog) => {
+    navigate(`/app/dog/${dog.ownerId}/${dog.dogId}`);
+  };
+
   useEffect(() => {
     fetchLikedDogs();
   }, [isAuthenticated]);
@@ -106,10 +113,7 @@ export default function MyLikes() {
             </span>
           }
         >
-          <Button
-            type="primary"
-            onClick={() => (window.location.href = "/match")}
-          >
+          <Button type="primary" onClick={() => navigate("/app/match")}>
             Ir a Match
           </Button>
         </Empty>
@@ -152,26 +156,40 @@ export default function MyLikes() {
                       objectFit: "cover",
                     }}
                   />
-                  <Button
-                    danger
-                    icon={<DeleteOutlined />}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      removeLike(dog.dogId);
-                    }}
+                  <div
                     style={{
                       position: "absolute",
                       top: 10,
                       right: 10,
-                      borderRadius: "50%",
+                      display: "flex",
+                      gap: "8px",
                     }}
-                  />
+                  >
+                    <Button
+                      icon={<EyeOutlined />}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        viewDogDetail(dog);
+                      }}
+                      style={{
+                        borderRadius: "50%",
+                      }}
+                    />
+                    <Button
+                      danger
+                      icon={<DeleteOutlined />}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        removeLike(dog.dogId);
+                      }}
+                      style={{
+                        borderRadius: "50%",
+                      }}
+                    />
+                  </div>
                 </div>
               }
-              onClick={() => {
-                // Aquí podrías navegar al perfil del dueño o mostrar más detalles
-                console.log("Ver perfil de", dog.owner.name);
-              }}
+              onClick={() => viewDogDetail(dog)}
             >
               <Card.Meta
                 title={

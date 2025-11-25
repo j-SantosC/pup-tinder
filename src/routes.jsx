@@ -9,6 +9,7 @@ import AuthCallback from "./components/AuthCallback";
 import Profile from "./pages/Profile";
 import Match from "./pages/Match";
 import MyLikes from "./pages/MyLikes";
+import DogDetail from "./pages/DogDetail";
 
 const AppProtected = withAuthenticationRequired(App, {
   onRedirecting: () => <Spin />,
@@ -29,8 +30,8 @@ export const router = createBrowserRouter([
       { path: "home", element: <Home /> },
       { path: "profile", element: <Profile /> },
       { path: "match", element: <Match /> },
-      { path: "match", element: <Match /> },
       { path: "likes", element: <MyLikes /> },
+      { path: "dog/:userId/:dogId", element: <DogDetail /> },
     ],
   },
 ]);

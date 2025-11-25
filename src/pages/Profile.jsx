@@ -35,8 +35,11 @@ const ProfileWithUsers = () => {
   const [dogs, setDogs] = useState([]);
   const [isDogModalVisible, setIsDogModalVisible] = useState(false);
   const [isEditModalVisible, setIsEditModalVisible] = useState(false);
+  const [isEditDogModalVisible, setIsEditDogModalVisible] = useState(false);
+  const [selectedDog, setSelectedDog] = useState(null);
   const [dogForm] = Form.useForm();
   const [editForm] = Form.useForm();
+  const [editDogForm] = Form.useForm();
   const [uploading, setUploading] = useState(false);
   const [loading, setLoading] = useState(true);
 
@@ -45,7 +48,6 @@ const ProfileWithUsers = () => {
       setLoading(true);
       const token = await getAccessTokenSilently();
 
-      // Primero intenta obtener el usuario
       let res = await fetch("http://localhost:3001/api/users/auth/profile", {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -53,7 +55,6 @@ const ProfileWithUsers = () => {
       });
 
       if (res.status === 404) {
-        // Si no existe, créalo
         res = await fetch("http://localhost:3001/api/users/auth/create", {
           method: "POST",
           headers: {
@@ -190,6 +191,47 @@ const ProfileWithUsers = () => {
     }
   };
 
+  const handleEditDog = async (values) => {
+    if (!currentUser?._id || !selectedDog) return;
+
+    setUploading(true);
+    const token = await getAccessTokenSilently();
+    const formData = new FormData();
+
+    if (values.dogImage?.file) {
+      formData.append("image", values.dogImage.file);
+    }
+    formData.append("name", values.name);
+    formData.append("breed", values.breed);
+    formData.append("age", values.age);
+
+    try {
+      const res = await fetch(
+        `http://localhost:3001/api/users/${currentUser._id}/dogs/${selectedDog._id}`,
+        {
+          method: "PUT",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+          body: formData,
+        }
+      );
+
+      if (!res.ok) throw new Error("Failed to update dog");
+
+      message.success("Perro actualizado correctamente");
+      setIsEditDogModalVisible(false);
+      editDogForm.resetFields();
+      setSelectedDog(null);
+      fetchOrCreateUser();
+    } catch (err) {
+      console.error("Update dog error:", err);
+      message.error("Error al actualizar perro");
+    } finally {
+      setUploading(false);
+    }
+  };
+
   const handleDeleteDog = async (dogId) => {
     const token = await getAccessTokenSilently();
 
@@ -221,6 +263,16 @@ const ProfileWithUsers = () => {
       bio: currentUser.bio || "",
     });
     setIsEditModalVisible(true);
+  };
+
+  const openEditDogModal = (dog) => {
+    setSelectedDog(dog);
+    editDogForm.setFieldsValue({
+      name: dog.name,
+      breed: dog.breed,
+      age: dog.age,
+    });
+    setIsEditDogModalVisible(true);
   };
 
   if (!isAuthenticated)
@@ -320,6 +372,10 @@ const ProfileWithUsers = () => {
                 renderItem={(dog) => (
                   <List.Item
                     actions={[
+                      <Button
+                        icon={<EditOutlined />}
+                        onClick={() => openEditDogModal(dog)}
+                      />,
                       <Popconfirm
                         title="¿Eliminar este perro?"
                         onConfirm={() => handleDeleteDog(dog._id)}
@@ -434,6 +490,66 @@ const ProfileWithUsers = () => {
                 Agregar
               </Button>
               <Button onClick={() => setIsDogModalVisible(false)}>
+                Cancelar
+              </Button>
+            </Space>
+          </Form.Item>
+        </Form>
+      </Modal>
+
+      <Modal
+        title="Editar Perro"
+        open={isEditDogModalVisible}
+        onCancel={() => {
+          setIsEditDogModalVisible(false);
+          editDogForm.resetFields();
+          setSelectedDog(null);
+        }}
+        footer={null}
+      >
+        <Form form={editDogForm} onFinish={handleEditDog} layout="vertical">
+          <Form.Item
+            name="name"
+            label="Nombre"
+            rules={[{ required: true, message: "Nombre del perro" }]}
+          >
+            <Input placeholder="Nombre" />
+          </Form.Item>
+
+          <Form.Item
+            name="breed"
+            label="Raza"
+            rules={[{ required: true, message: "Raza del perro" }]}
+          >
+            <Input placeholder="Raza" />
+          </Form.Item>
+
+          <Form.Item
+            name="age"
+            label="Edad"
+            rules={[{ required: true, message: "Edad del perro" }]}
+          >
+            <Input placeholder="Años" type="number" />
+          </Form.Item>
+
+          <Form.Item name="dogImage" label="Nueva Foto (opcional)">
+            <Upload beforeUpload={() => false} maxCount={1} accept="image/*">
+              <Button icon={<UploadOutlined />}>Cambiar foto</Button>
+            </Upload>
+          </Form.Item>
+
+          <Form.Item>
+            <Space>
+              <Button type="primary" htmlType="submit" loading={uploading}>
+                Guardar cambios
+              </Button>
+              <Button
+                onClick={() => {
+                  setIsEditDogModalVisible(false);
+                  editDogForm.resetFields();
+                  setSelectedDog(null);
+                }}
+              >
                 Cancelar
               </Button>
             </Space>
